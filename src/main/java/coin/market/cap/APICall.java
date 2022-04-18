@@ -21,14 +21,14 @@ import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class APICall {
-    final private static String  apiKey = "bc27e606-6f8a-4864-8b14-930537e462f7";
-    final private static String uri = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
+    private static final String  API_KEY = "bc27e606-6f8a-4864-8b14-930537e462f7";
+    private static final String URI = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
 
 
     public static List<Coin>  callTop50Coins(){
@@ -50,7 +50,7 @@ public class APICall {
         String result = "";
         Gson gson = new Gson();
         try {
-            result = makeAPICall(uri, paratmers);
+            result = makeAPICall(URI, paratmers);
         } catch (URISyntaxException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -61,26 +61,29 @@ public class APICall {
             List<Coin> coinList = new ArrayList<>();
             for(int i =0; i< jsonArray.size(); i++){
                 var obj = jsonArray.get(i).getAsJsonObject();
-                System.out.println(result);
                 var name = obj.get("name").getAsString();
-                System.out.println("name: " + name);
                 CoinMarketCap coinMarketCap = gson.fromJson(obj, CoinMarketCap.class);
-                System.out.println(coinMarketCap.getName());
                 Coin coin = new Coin();
                 coin.setId(coinMarketCap.getId());
                 coin.setName(coinMarketCap.getName());
                 coin.setSymbol(coinMarketCap.getSymbol());
                 coin.setSlug(coinMarketCap.getSlug());
                 coin.setNum_market_pairs(coinMarketCap.getNum_market_pairs());
+
                 DateTimeFormatter f = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSz");  // Specify locale to determine human language and cultural norms used in translating that input string.
                 LocalDateTime dateAddedLdt = LocalDateTime.parse(coinMarketCap.getDate_added() , f );
-                coin.setDate_added(dateAddedLdt.toInstant(ZoneOffset.UTC));
+                var dateAdded = dateAddedLdt.toInstant(ZoneOffset.UTC);
+                ZonedDateTime zdtDateAdded = ZonedDateTime.ofInstant(dateAdded, ZoneId.of("Z"));
+                //coin.setDate_added(coinMarketCap.getDate_added());
 
                 coin.setMax_supply(coinMarketCap.getMax_supply());
                 coin.setCirculating_supply(coinMarketCap.getCirculating_supply());
                 coin.setTotal_supply(coinMarketCap.getTotal_supply());
                 LocalDateTime lastUpdatedLdt = LocalDateTime.parse(coinMarketCap.getLast_updated() , f );
-                coin.setLast_updated(lastUpdatedLdt.toInstant(ZoneOffset.UTC));
+                var lastUpdated = lastUpdatedLdt.toInstant(ZoneOffset.UTC);
+                ZonedDateTime zdtLastUpdated = ZonedDateTime.ofInstant(lastUpdated, ZoneId.of("Z"));
+
+                //coin.setLast_updated(coinMarketCap.getLast_updated());
 
                 var quote = coinMarketCap.getQuote();
                 var usdObj  = quote.get("USD").getAsJsonObject();
@@ -109,22 +112,26 @@ public class APICall {
 
         URIBuilder query = new URIBuilder(uri);
         query.addParameters(parameters);
-
-        CloseableHttpClient client = HttpClients.createDefault();
-        HttpGet request = new HttpGet(query.build());
-
-        request.setHeader(HttpHeaders.ACCEPT, "application/json");
-        request.addHeader("X-CMC_PRO_API_KEY", apiKey);
-
-        CloseableHttpResponse response = client.execute(request);
-
+        CloseableHttpClient client = null;
+        CloseableHttpResponse response = null;
         try {
-            System.out.println(response.getStatusLine());
+            client = HttpClients.createDefault();
+            HttpGet request = new HttpGet(query.build());
+
+            request.setHeader(HttpHeaders.ACCEPT, "application/json");
+            request.addHeader("X-CMC_PRO_API_KEY", API_KEY);
+
+            response = client.execute(request);
             HttpEntity entity = response.getEntity();
             response_content = EntityUtils.toString(entity);
             EntityUtils.consume(entity);
-        } finally {
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        finally {
             response.close();
+            client.close();
         }
 
         return response_content;

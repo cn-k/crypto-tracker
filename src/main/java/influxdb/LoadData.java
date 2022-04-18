@@ -1,15 +1,11 @@
 package influxdb;
 
-import com.influxdb.client.InfluxDBClient;
-import com.influxdb.client.InfluxDBClientFactory;
-import com.influxdb.client.WriteApi;
-import com.influxdb.client.domain.WritePrecision;
-import com.influxdb.query.FluxTable;
-import model.Coin;
+
 
 import java.util.List;
 
 public class LoadData {
+    /*
     static InfluxDBClient client;
     static String token ;
     static String bucket;
@@ -48,5 +44,7 @@ public class LoadData {
         List<FluxTable> tables = client.getQueryApi().query(query, org);
         tables.forEach(ft -> ft.getRecords().forEach(r -> System.out.println(r.getValue())));
     }
+
+     */
 
 }
